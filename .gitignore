@@ -103,3 +103,4 @@ docs/pages/coverage/
 docs/pages/nx-graph/
 docs/pages/storybook/
 docs/pages/playwright-reports/
+.vercel
