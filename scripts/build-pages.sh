@@ -66,6 +66,40 @@ else
 EOF
 fi
 
+echo "[build-pages] Creating Vercel-compatible directory structure"
+mkdir -p ".pages/docs/pages"
+cat > ".pages/docs/pages/index.html" <<'EOF'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ComfyUI Frontend Documentation</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .redirect-notice { background: #f0f9ff; border: 1px solid #0284c7; padding: 20px; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ComfyUI Frontend Documentation</h1>
+        <div class="redirect-notice">
+            <h2>🔄 Redirecting to Main Documentation</h2>
+            <p>This page will redirect you to the main ComfyUI Frontend documentation.</p>
+            <p>If the redirect doesn't work, please visit: <a href="../../index.html">Main Documentation</a></p>
+        </div>
+
+        <script>
+            setTimeout(() => {
+                window.location.href = '../../index.html';
+            }, 2000);
+        </script>
+    </div>
+</body>
+</html>
+EOF
+
 echo "[build-pages] Landing page already exists at .pages/index.html"
 
 echo "[build-pages] Build artifacts ready in ./.pages"
