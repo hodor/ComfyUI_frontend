@@ -12,10 +12,6 @@ const config: KnipConfig = {
       ],
       project: ['**/*.{js,ts,vue}', '*.{js,ts,mts}']
     },
-    'apps/desktop-ui': {
-      entry: ['src/main.ts', 'src/i18n.ts'],
-      project: ['src/**/*.{js,ts,vue}', '*.{js,ts,mts}']
-    },
     'packages/tailwind-utils': {
       project: ['src/**/*.{js,ts}']
     },
@@ -34,13 +30,7 @@ const config: KnipConfig = {
     '@primeuix/forms',
     '@primeuix/styled',
     '@primeuix/utils',
-    '@primevue/icons',
-    // Dev
-    '@trivago/prettier-plugin-sort-imports',
-    // 3D and collaboration libraries
-    'three',
-    '@types/three',
-    'yjs'
+    '@primevue/icons'
   ],
   ignore: [
     // Auto generated manager types
@@ -49,16 +39,6 @@ const config: KnipConfig = {
     // Used by a custom node (that should move off of this)
     'src/scripts/ui/components/splitButton.ts',
     '.pages/vite.config.ts',
-    // Utility files with exports that may be used by extensions or future features
-    'src/constants/uvMirrors.ts',
-    'src/lib/litegraph/src/measure.ts',
-    'src/lib/litegraph/src/widgets/DisconnectedWidget.ts',
-    'src/renderer/extensions/vueNodes/widgets/utils/audioUtils.ts',
-    'src/utils/electronMirrorCheck.ts',
-    'src/renderer/extensions/vueNodes/composables/slotLinkDragContext.ts',
-    'src/types/spatialIndex.ts',
-    'src/lib/litegraph/src/litegraph.ts',
-    'src/utils/vintageClipboard.ts',
     // Service worker - registered at runtime via navigator.serviceWorker.register()
     'public/auth-sw.js'
   ],

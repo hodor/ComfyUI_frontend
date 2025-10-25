@@ -53,7 +53,7 @@ fi
 echo "[build-pages] Generating Knip report"
 mkdir -p ".pages/knip"
 rm -f ".pages/knip/report.md"
-if pnpm knip --reporter markdown --no-progress --no-exit-code > ".pages/knip/report.md" 2>/dev/null && [ -s ".pages/knip/report.md" ]; then
+if pnpm knip --reporter markdown --no-progress --no-exit-code 2>/dev/null | sed 's/^\[log\] //' > ".pages/knip/report.md" && [ -s ".pages/knip/report.md" ]; then
   echo "✅ Knip report generated at .pages/knip/report.md"
 else
   echo "⚠️  Knip report failed, creating placeholder..."
