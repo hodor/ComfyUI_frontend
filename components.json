@@ -4,7 +4,7 @@
   "typescript": true,
   "tailwind": {
     "config": "tailwind.config.ts",
-    "css": "src/assets/css/style.css",
+    "css": "packages/design-system/src/css/style.css",
     "baseColor": "stone",
     "cssVariables": true,
     "prefix": ""
@@ -12,7 +12,7 @@
   "aliases": {
     "components": "@/components",
     "composables": "@/composables",
-    "utils": "@/utils",
+    "utils": "@/utils/tailwindUtil",
     "ui": "@/components/ui",
     "lib": "@/lib"
   },
