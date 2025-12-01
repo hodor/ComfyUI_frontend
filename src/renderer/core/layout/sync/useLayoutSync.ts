@@ -8,7 +8,6 @@ import { onUnmounted, ref } from 'vue'
 
 import type { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { addNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 
 /**
  * Composable for syncing LiteGraph with the Layout system
@@ -44,13 +43,12 @@ export function useLayoutSync() {
           liteNode.pos[1] = layout.position.y
         }
 
-        const targetHeight = addNodeTitleHeight(layout.size.height)
         if (
           liteNode.size[0] !== layout.size.width ||
-          liteNode.size[1] !== targetHeight
+          liteNode.size[1] !== layout.size.height
         ) {
           // Use setSize() to trigger onResize callback
-          liteNode.setSize([layout.size.width, targetHeight])
+          liteNode.setSize([layout.size.width, layout.size.height])
         }
       }
 

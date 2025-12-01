@@ -40,7 +40,7 @@ function flushScheduledSlotLayoutSync() {
   }
 }
 
-export function syncNodeSlotLayoutsFromDOM(
+function syncNodeSlotLayoutsFromDOM(
   nodeId: string,
   conv?: ReturnType<typeof useSharedCanvasPositionConversion>
 ) {

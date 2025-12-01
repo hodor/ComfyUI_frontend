@@ -1,13 +1,14 @@
 import { useEventListener } from '@vueuse/core'
-import { ref } from 'vue'
+import { ref, toValue } from 'vue'
+import type { ComputedRef } from 'vue'
 
 import type { Point, Size } from '@/renderer/core/layout/types'
 import { useNodeSnap } from '@/renderer/extensions/vueNodes/composables/useNodeSnap'
-import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useShiftKeySync'
 
 import type { ResizeHandleDirection } from './resizeMath'
 import { createResizeSession, toCanvasDelta } from './resizeMath'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
+import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useShiftKeySync'
 
 interface ResizeCallbackPayload {
   size: Size
@@ -21,7 +22,9 @@ interface ResizeCallbackPayload {
  * Handles pointer capture, coordinate calculations, and size constraints.
  */
 export function useNodeResize(
-  resizeCallback: (payload: ResizeCallbackPayload, element: HTMLElement) => void
+  position: ComputedRef<Point>,
+  size: ComputedRef<Size>,
+  resizeCallback: (payload: ResizeCallbackPayload) => void
 ) {
   const transformState = useTransformState()
 
@@ -43,28 +46,15 @@ export function useNodeResize(
 
   // Shift key sync for LiteGraph canvas preview
   const { trackShiftKey } = useShiftKeySync()
-
-  const startResize = (
-    event: PointerEvent,
-    handle: ResizeHandleDirection,
-    startPosition: Point
-  ) => {
+  const startResize = (event: PointerEvent, handle: ResizeHandleDirection) => {
     event.preventDefault()
     event.stopPropagation()
 
     const target = event.currentTarget
     if (!(target instanceof HTMLElement)) return
 
-    const nodeElement = target.closest('[data-node-id]')
-    if (!(nodeElement instanceof HTMLElement)) return
-
-    const rect = nodeElement.getBoundingClientRect()
-    const scale = transformState.camera.z
-
-    const startSize: Size = {
-      width: rect.width / scale,
-      height: rect.height / scale
-    }
+    const startPosition = toValue(position)
+    const startSize = toValue(size)
 
     // Track shift key state and sync to canvas for snap preview
     const stopShiftSync = trackShiftKey(event)
@@ -76,7 +66,7 @@ export function useNodeResize(
     resizeStartPointer.value = { x: event.clientX, y: event.clientY }
     resizeSession.value = createResizeSession({
       startSize,
-      startPosition: { ...startPosition },
+      startPosition,
       handle
     })
 
@@ -87,6 +77,8 @@ export function useNodeResize(
         !resizeSession.value
       )
         return
+      event.preventDefault()
+      event.stopPropagation()
 
       const startPointer = resizeStartPointer.value
       const session = resizeSession.value
@@ -104,27 +96,31 @@ export function useNodeResize(
           shouldSnap(moveEvent) ? applySnapToSize : undefined
         )
 
-        resizeCallback(outcome, nodeElement)
+        resizeCallback(outcome)
       }
     }
 
-    const handlePointerUp = (upEvent: PointerEvent) => {
-      if (isResizing.value) {
-        isResizing.value = false
-        resizeStartPointer.value = null
-        resizeSession.value = null
+    const handlePointerUp = () => {
+      if (!isResizing.value) return
 
-        // Stop tracking shift key state
-        stopShiftSync()
+      event.stopPropagation()
 
-        target.releasePointerCapture(upEvent.pointerId)
-        stopMoveListen()
-        stopUpListen()
-      }
+      isResizing.value = false
+      resizeStartPointer.value = null
+      resizeSession.value = null
+      // Stop tracking shift key state
+      stopShiftSync()
+
+      stopMoveListen()
+      stopUpListen()
     }
 
-    const stopMoveListen = useEventListener('pointermove', handlePointerMove)
-    const stopUpListen = useEventListener('pointerup', handlePointerUp)
+    const stopMoveListen = useEventListener('pointermove', handlePointerMove, {
+      capture: true
+    })
+    const stopUpListen = useEventListener('pointerup', handlePointerUp, {
+      capture: true
+    })
   }
 
   return {

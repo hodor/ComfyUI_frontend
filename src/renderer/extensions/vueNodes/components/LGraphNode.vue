@@ -38,7 +38,8 @@
         transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
         zIndex: zIndex,
         opacity: nodeOpacity,
-        '--component-node-background': nodeBodyBackgroundColor
+        '--component-node-background': nodeBodyBackgroundColor,
+        ...sizeStyle
       }
     ]"
     v-bind="remainingPointerHandlers"
@@ -125,7 +126,9 @@
         role="button"
         :aria-label="handle.ariaLabel"
         :class="cn(baseResizeHandleClasses, handle.classes)"
-        @pointerdown.stop="handleResizePointerDown(handle.direction)($event)"
+        @pointerdown.capture.stop="
+          handleResizePointerDown(handle.direction)($event)
+        "
       />
     </template>
   </div>
@@ -133,7 +136,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, nextTick, onErrorCaptured, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onErrorCaptured, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
@@ -154,7 +157,6 @@ import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotCon
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
-import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
@@ -193,8 +195,6 @@ const { t } = useI18n()
 const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
   useNodeEventHandlers()
 const { bringNodeToFront } = useNodeZIndex()
-
-useVueElementTracking(() => nodeData.id, 'node')
 
 const { selectedNodeIds } = storeToRefs(useCanvasStore())
 const isSelected = computed(() => {
@@ -263,7 +263,7 @@ onErrorCaptured((error) => {
   return false // Prevent error propagation
 })
 
-const { position, size, zIndex, moveNodeTo } = useNodeLayout(() => nodeData.id)
+const { position, size, zIndex } = useNodeLayout(() => nodeData.id)
 const { pointerHandlers } = useNodePointerInteractions(() => nodeData.id)
 const { onPointerdown, ...remainingPointerHandlers } = pointerHandlers
 const { startDrag } = useNodeDrag()
@@ -298,23 +298,17 @@ const handleContextMenu = (event: MouseEvent) => {
   }
 }
 
-onMounted(() => {
-  // Set initial DOM size from layout store, but respect intrinsic content minimum
-  if (size.value && nodeContainerRef.value) {
-    nodeContainerRef.value.style.setProperty(
-      '--node-width',
-      `${size.value.width}px`
-    )
-    nodeContainerRef.value.style.setProperty(
-      '--node-height',
-      `${size.value.height}px`
-    )
-  }
+const sizeStyle = computed(() => {
+  return size.value && !isCollapsed.value
+    ? {
+        '--node-width': `${size.value.width}px`,
+        '--node-height': `${size.value.height}px`
+      }
+    : {}
 })
 
 const baseResizeHandleClasses =
   'absolute h-3 w-3 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40'
-const POSITION_EPSILON = 0.01
 
 type CornerResizeHandle = {
   id: string
@@ -352,45 +346,32 @@ const cornerResizeHandles: CornerResizeHandle[] = [
 
 const MIN_NODE_WIDTH = 225
 
-const { startResize } = useNodeResize((result, element) => {
+const { startResize } = useNodeResize(position, size, (result) => {
   if (isCollapsed.value) return
 
   // Clamp width to minimum to avoid conflicts with CSS min-width
   const clampedWidth = Math.max(result.size.width, MIN_NODE_WIDTH)
 
   // Apply size directly to DOM element - ResizeObserver will pick this up
-  element.style.setProperty('--node-width', `${clampedWidth}px`)
-  element.style.setProperty('--node-height', `${result.size.height}px`)
-
-  const currentPosition = position.value
-  const deltaX = Math.abs(result.position.x - currentPosition.x)
-  const deltaY = Math.abs(result.position.y - currentPosition.y)
-
-  if (deltaX > POSITION_EPSILON || deltaY > POSITION_EPSILON) {
-    moveNodeTo(result.position)
-  }
+  layoutStore.batchUpdateNodeBounds([
+    {
+      nodeId: nodeData.id,
+      bounds: {
+        ...result.position,
+        width: clampedWidth,
+        height: result.size.height
+      }
+    }
+  ])
 })
 
 const handleResizePointerDown = (direction: ResizeHandleDirection) => {
   return (event: PointerEvent) => {
     if (nodeData.flags?.pinned) return
 
-    startResize(event, direction, { ...position.value })
+    startResize(event, direction)
   }
 }
-
-watch(isCollapsed, (collapsed) => {
-  const element = nodeContainerRef.value
-  if (!element) return
-  const [from, to] = collapsed ? ['', '-x'] : ['-x', '']
-  const currentWidth = element.style.getPropertyValue(`--node-width${from}`)
-  element.style.setProperty(`--node-width${to}`, currentWidth)
-  element.style.setProperty(`--node-width${from}`, '')
-
-  const currentHeight = element.style.getPropertyValue(`--node-height${from}`)
-  element.style.setProperty(`--node-height${to}`, currentHeight)
-  element.style.setProperty(`--node-height${from}`, '')
-})
 
 // Check if node has custom content (like image/video outputs)
 const hasCustomContent = computed(() => {

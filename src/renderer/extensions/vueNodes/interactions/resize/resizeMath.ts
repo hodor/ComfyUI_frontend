@@ -6,8 +6,8 @@ export type ResizeHandleDirection = {
 }
 
 function applyHandleDelta(
-  startSize: Size,
-  delta: Point,
+  startSize: Readonly<Size>,
+  delta: Readonly<Point>,
   handle: ResizeHandleDirection
 ): Size {
   const horizontalMultiplier = handle.horizontal === 'right' ? 1 : -1
@@ -20,9 +20,9 @@ function applyHandleDelta(
 }
 
 function computeAdjustedPosition(
-  startPosition: Point,
-  startSize: Size,
-  nextSize: Size,
+  startPosition: Readonly<Point>,
+  startSize: Readonly<Size>,
+  nextSize: Readonly<Size>,
   handle: ResizeHandleDirection
 ): Point {
   const widthDelta = startSize.width - nextSize.width
@@ -51,12 +51,12 @@ export function computeResizeOutcome({
   handle,
   snapFn
 }: {
-  startSize: Size
-  startPosition: Point
-  delta: Point
+  startSize: Readonly<Size>
+  startPosition: Readonly<Point>
+  delta: Readonly<Point>
   handle: ResizeHandleDirection
   snapFn?: (size: Size) => Size
-}): { size: Size; position: Point } {
+}): { size: Readonly<Size>; position: Readonly<Point> } {
   const resized = applyHandleDelta(startSize, delta, handle)
   const snapped = snapFn?.(resized) ?? resized
   const position = computeAdjustedPosition(
@@ -73,12 +73,11 @@ export function computeResizeOutcome({
 }
 
 export function createResizeSession(config: {
-  startSize: Size
-  startPosition: Point
+  startSize: Readonly<Size>
+  startPosition: Readonly<Point>
   handle: ResizeHandleDirection
 }) {
-  const startSize = { ...config.startSize }
-  const startPosition = { ...config.startPosition }
+  const { startSize, startPosition } = config
   const handle = config.handle
 
   return (delta: Point, snapFn?: (size: Size) => Size) =>
@@ -92,8 +91,8 @@ export function createResizeSession(config: {
 }
 
 export function toCanvasDelta(
-  startPointer: Point,
-  currentPointer: Point,
+  startPointer: Readonly<Point>,
+  currentPointer: Readonly<Point>,
   scale: number
 ): Point {
   const safeScale = scale === 0 ? 1 : scale

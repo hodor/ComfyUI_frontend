@@ -1,13 +1,12 @@
 import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, toValue } from 'vue'
+import { computed } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
-import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 
 const mockData = vi.hoisted(() => ({
   mockNodeIds: new Set<string>(),
@@ -42,13 +41,6 @@ vi.mock(
     const handleNodeSelect = vi.fn()
     return { useNodeEventHandlers: () => ({ handleNodeSelect }) }
   }
-)
-
-vi.mock(
-  '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking',
-  () => ({
-    useVueElementTracking: vi.fn()
-  })
 )
 
 vi.mock('@/composables/useErrorHandling', () => ({
@@ -144,18 +136,6 @@ describe('LGraphNode', () => {
     vi.resetAllMocks()
     mockData.mockNodeIds = new Set()
     mockData.mockExecuting = false
-  })
-
-  it('should call resize tracking composable with node ID', () => {
-    mountLGraphNode({ nodeData: mockNodeData })
-
-    expect(useVueElementTracking).toHaveBeenCalledWith(
-      expect.any(Function),
-      'node'
-    )
-    const idArg = vi.mocked(useVueElementTracking).mock.calls[0]?.[0]
-    const id = toValue(idArg)
-    expect(id).toEqual('test-node-123')
   })
 
   it('should render with data-node-id attribute', () => {
