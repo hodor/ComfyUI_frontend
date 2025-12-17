@@ -94,6 +94,13 @@
     "jest/no-disabled-tests": "off",
     "jest/no-standalone-expect": "off",
     "jest/valid-title": "off",
+    "typescript/no-import-type-side-effects": "error",
+    "typescript/no-empty-object-type": [
+      "error",
+      {
+        "allowInterfaces": "always"
+      }
+    ],
     "typescript/no-this-alias": "off",
     "typescript/no-unnecessary-parameter-property-assignment": "off",
     "typescript/no-unsafe-declaration-merging": "off",
