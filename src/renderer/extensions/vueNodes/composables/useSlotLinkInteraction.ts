@@ -304,9 +304,14 @@ export function useSlotLinkInteraction({
     ])
 
     updatePointerPosition(clientX, clientY, canvasX, canvasY)
+    app.canvas.last_mouse = [canvasX, canvasY]
+    const augmentedEvent = toCanvasPointerEvent(event)
+    app.canvas.pointer.move(augmentedEvent)
+    app.canvas.pointer.isDown = !!(event.buttons & 1)
   }
 
   const processPointerMoveFrame = () => {
+    if (app.canvas?.read_only) return
     const data = dragContext.pendingPointerMove
     if (!data) return
     dragContext.pendingPointerMove = null
@@ -409,7 +414,6 @@ export function useSlotLinkInteraction({
 
   const handlePointerMove = (event: PointerEvent) => {
     if (!pointerSession.matches(event)) return
-    event.stopPropagation()
 
     dragContext.pendingPointerMove = {
       clientX: event.clientX,
