@@ -523,6 +523,12 @@ We welcome contributions to ComfyUI Frontend! Please see our [Contributing Guide
 
 ## Development
 
+### Prerequisites
+
+- **Node.js** (v24+) - Required for running the development server and build tools
+- **pnpm** - Package manager (installed automatically via `preinstall` script)
+- **Git** - Version control
+
 For detailed development setup, testing procedures, and technical information, please refer to [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ### i18n
