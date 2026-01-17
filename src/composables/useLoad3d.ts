@@ -463,6 +463,34 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     }
   }
 
+  async function generateThumbnailIfNeeded(
+    load3dInstance: Load3d,
+    modelPath: string,
+    folderType: 'input' | 'output'
+  ): Promise<void> {
+    try {
+      const [subfolder, filename] = Load3dUtils.splitFilePath(modelPath)
+      const thumbnailFilename = Load3dUtils.getThumbnailFilename(filename)
+
+      const exists = await Load3dUtils.fileExists(
+        subfolder,
+        thumbnailFilename,
+        folderType
+      )
+      if (exists) return
+
+      const imageData = await load3dInstance.captureThumbnail(256, 256)
+      await Load3dUtils.uploadThumbnail(
+        imageData,
+        subfolder,
+        thumbnailFilename,
+        folderType
+      )
+    } catch (error) {
+      console.warn('[Load3D] Thumbnail generation failed:', error)
+    }
+  }
+
   const eventConfig = {
     materialModeChange: (value: string) => {
       modelConfig.value.materialMode = value as MaterialMode
@@ -511,6 +539,22 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       hasSkeleton.value = load3d?.hasSkeleton() ?? false
       // Reset skeleton visibility when loading new model
       modelConfig.value.showSkeleton = false
+
+      if (load3d) {
+        const node = toRaw(nodeRef.value) as LGraphNode | null
+
+        const modelWidget = node?.widgets?.find(
+          (w) => w.name === 'model_file' || w.name === 'image'
+        )
+        const modelPath = modelWidget?.value as string | undefined
+        if (modelPath) {
+          void generateThumbnailIfNeeded(
+            load3d,
+            modelPath,
+            isPreview.value ? 'output' : 'input'
+          )
+        }
+      }
     },
     skeletonVisibilityChange: (value: boolean) => {
       modelConfig.value.showSkeleton = value

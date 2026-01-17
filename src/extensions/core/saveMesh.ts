@@ -3,7 +3,9 @@ import { nextTick } from 'vue'
 import Load3D from '@/components/load3d/Load3D.vue'
 import { useLoad3d } from '@/composables/useLoad3d'
 import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
+import type Load3d from '@/extensions/core/load3d/Load3d'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
+import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import type { NodeOutputWith, ResultItem } from '@/schemas/apiSchema'
@@ -15,6 +17,34 @@ import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import { useExtensionService } from '@/services/extensionService'
 import { useLoad3dService } from '@/services/load3dService'
+
+async function generateThumbnailForSaveMesh(
+  load3d: Load3d,
+  modelPath: string,
+  folderType: 'input' | 'output'
+): Promise<void> {
+  try {
+    const [subfolder, filename] = Load3dUtils.splitFilePath(modelPath)
+    const thumbnailFilename = Load3dUtils.getThumbnailFilename(filename)
+
+    const exists = await Load3dUtils.fileExists(
+      subfolder,
+      thumbnailFilename,
+      folderType
+    )
+    if (exists) return
+
+    const imageData = await load3d.captureThumbnail(256, 256)
+    await Load3dUtils.uploadThumbnail(
+      imageData,
+      subfolder,
+      thumbnailFilename,
+      folderType
+    )
+  } catch (error) {
+    console.warn('[SaveGLB] Thumbnail generation failed:', error)
+  }
+}
 
 const inputSpec: CustomInputSpec = {
   name: 'image',
@@ -94,6 +124,13 @@ useExtensionService().registerExtension({
           const config = new Load3DConfiguration(load3d, node.properties)
 
           const loadFolder = fileInfo.type as 'input' | 'output'
+
+          const onModelLoaded = () => {
+            load3d.removeEventListener('modelLoadingEnd', onModelLoaded)
+            void generateThumbnailForSaveMesh(load3d, filePath, loadFolder)
+          }
+          load3d.addEventListener('modelLoadingEnd', onModelLoaded)
+
           config.configureForSaveMesh(loadFolder, filePath)
         }
       })

@@ -122,6 +122,51 @@ class Load3dUtils {
 
     await Promise.all(uploadPromises)
   }
+
+  static getThumbnailFilename(modelFilename: string): string {
+    return `${modelFilename}.png`
+  }
+
+  static async fileExists(
+    subfolder: string,
+    filename: string,
+    type: string = 'input'
+  ): Promise<boolean> {
+    try {
+      const url = api.apiURL(this.getResourceURL(subfolder, filename, type))
+      const response = await fetch(url, { method: 'HEAD' })
+      return response.ok
+    } catch {
+      return false
+    }
+  }
+
+  static async uploadThumbnail(
+    imageData: string,
+    subfolder: string,
+    filename: string,
+    type: string = 'input'
+  ): Promise<boolean> {
+    try {
+      const blob = await fetch(imageData).then((r) => r.blob())
+      const file = new File([blob], filename, { type: 'image/png' })
+
+      const body = new FormData()
+      body.append('image', file)
+      body.append('subfolder', subfolder)
+      body.append('type', type)
+
+      const resp = await api.fetchApi('/upload/image', {
+        method: 'POST',
+        body
+      })
+
+      return resp.status === 200
+    } catch (error) {
+      console.warn('[Load3D] uploadThumbnail: failed', error)
+      return false
+    }
+  }
 }
 
 export default Load3dUtils
